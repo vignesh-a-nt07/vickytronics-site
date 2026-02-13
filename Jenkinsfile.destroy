@@ -1,0 +1,47 @@
+pipeline {
+  agent any
+
+  environment {
+    AWS_ACCESS_KEY_ID     = credentials('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+    AWS_REGION            = credentials('AWS_REGION')
+  }
+
+  options {
+    timestamps()
+  }
+
+  stages {
+
+    stage('Checkout Repository') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Terraform Init') {
+      steps {
+        dir('terraform') {
+          sh 'terraform init -reconfigure'
+        }
+      }
+    }
+
+    stage('Terraform Destroy') {
+      steps {
+        dir('terraform') {
+          sh 'terraform destroy -auto-approve'
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo 'Terraform infrastructure destroyed successfully'
+    }
+    failure {
+      echo 'Terraform destroy failed'
+    }
+  }
+}

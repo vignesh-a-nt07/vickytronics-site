@@ -1,0 +1,80 @@
+pipeline {
+  agent any
+
+  environment {
+    AWS_ACCESS_KEY_ID     = credentials('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+
+    AWS_REGION     = 'us-east-1'
+    AWS_ACCOUNT_ID = '393078901209'
+    ECR_REPOSITORY = 'lms-vicky-repo'
+    EKS_CLUSTER    = 'lms-vicky-eks'
+  }
+
+  options {
+    timestamps()
+    timeout(time: 30, unit: 'MINUTES')
+  }
+
+  stages {
+
+    stage('Checkout Code') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Login to ECR') {
+      steps {
+        sh '''
+          aws ecr get-login-password --region $AWS_REGION |
+          docker login --username AWS --password-stdin \
+          $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+        '''
+      }
+    }
+
+    stage('Build & Push Image') {
+      steps {
+        sh '''
+          IMAGE_TAG=$(git rev-parse --short HEAD)
+          IMAGE_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY
+
+          docker build -t $IMAGE_URI:$IMAGE_TAG -t $IMAGE_URI:latest .
+          docker push $IMAGE_URI:$IMAGE_TAG
+          docker push $IMAGE_URI:latest
+        '''
+      }
+    }
+
+    stage('Configure kubectl') {
+      steps {
+        sh '''
+          aws eks update-kubeconfig \
+            --region $AWS_REGION \
+            --name $EKS_CLUSTER
+        '''
+      }
+    }
+
+    stage('Deploy with Helm') {
+      steps {
+        sh '''
+          helm upgrade --install lms ./helm/lms \
+            --namespace lms \
+            --create-namespace \
+            --set image.tag=$(git rev-parse --short HEAD)
+        '''
+      }
+    }
+  }
+
+  post {
+    success {
+      echo '✅ EKS deployment completed successfully'
+    }
+    failure {
+      echo '❌ EKS deployment failed'
+    }
+  }
+}

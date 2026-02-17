@@ -2,14 +2,14 @@ replicaCount: 1   # low cost
 
 frontend:
   image:
-    repository: 393078901209.dkr.ecr.us-east-1.amazonaws.com/ecommerce-frontend
+    repository: 393078901209.dkr.ecr.us-east-1.amazonaws.com/ecommerce-vicky-frontend
     tag: latest
     pullPolicy: Always
   containerPort: 3000
 
 backend:
   image:
-    repository: 393078901209.dkr.ecr.us-east-1.amazonaws.com/ecommerce-backend
+    repository: 393078901209.dkr.ecr.us-east-1.amazonaws.com/ecommerce-vicky-backend
     tag: latest
     pullPolicy: Always
   containerPort: 3001

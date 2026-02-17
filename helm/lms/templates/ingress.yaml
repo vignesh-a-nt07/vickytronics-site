@@ -16,7 +16,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ include "lms.fullname" . }}
+                name: {{ include "lms.fullname" . }}-frontend
                 port:
-                  number: {{ .Values.service.port }}
+                  number: {{ .Values.service.frontendPort }}
 {{- end }}

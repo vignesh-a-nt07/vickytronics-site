@@ -7,8 +7,11 @@ pipeline {
 
     AWS_REGION     = 'us-east-1'
     AWS_ACCOUNT_ID = '393078901209'
-    ECR_REPOSITORY = 'lms-vicky-repo'
-    EKS_CLUSTER    = 'lms-vicky-eks'
+
+    FRONTEND_REPO = 'ecommerce-vicky-frontend'
+    BACKEND_REPO  = 'ecommerce-vicky-backend'
+
+    EKS_CLUSTER   = 'vickytronic-site-eks'
   }
 
   options {
@@ -34,15 +37,31 @@ pipeline {
       }
     }
 
-    stage('Build & Push Image') {
+    stage('Build & Push Backend Image') {
       steps {
         sh '''
           IMAGE_TAG=$(git rev-parse --short HEAD)
-          IMAGE_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY
+          BACKEND_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$BACKEND_REPO
 
-          docker build -t $IMAGE_URI:$IMAGE_TAG -t $IMAGE_URI:latest .
-          docker push $IMAGE_URI:$IMAGE_TAG
-          docker push $IMAGE_URI:latest
+          docker build -t $BACKEND_URI:$IMAGE_TAG -t $BACKEND_URI:latest ./server
+          docker push $BACKEND_URI:$IMAGE_TAG
+          docker push $BACKEND_URI:latest
+        '''
+      }
+    }
+
+    stage('Build & Push Frontend Image') {
+      steps {
+        sh '''
+          IMAGE_TAG=$(git rev-parse --short HEAD)
+          FRONTEND_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$FRONTEND_REPO
+
+          docker build -f Dockerfile.dev \
+            -t $FRONTEND_URI:$IMAGE_TAG \
+            -t $FRONTEND_URI:latest .
+
+          docker push $FRONTEND_URI:$IMAGE_TAG
+          docker push $FRONTEND_URI:latest
         '''
       }
     }
@@ -60,10 +79,13 @@ pipeline {
     stage('Deploy with Helm') {
       steps {
         sh '''
-          helm upgrade --install lms ./helm/lms \
-            --namespace lms \
+          IMAGE_TAG=$(git rev-parse --short HEAD)
+
+          helm upgrade --install ecommerce ./helm/lms \
+            --namespace ecommerce \
             --create-namespace \
-            --set image.tag=$(git rev-parse --short HEAD)
+            --set backend.image.tag=$IMAGE_TAG \
+            --set frontend.image.tag=$IMAGE_TAG
         '''
       }
     }

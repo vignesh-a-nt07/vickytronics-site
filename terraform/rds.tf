@@ -1,19 +1,19 @@
 resource "aws_db_subnet_group" "db" {
-  name       = "mysql-subnet-group"
+  name       = "${var.project_name}-mysql-subnet-group"
   subnet_ids = aws_subnet.private[*].id
 
   tags = {
-    Name = "mysql-subnet-group"
+    Name = "${var.project_name}-mysql-subnet-group"
   }
 }
 
 resource "aws_db_instance" "mysql" {
-  identifier        = "mysql-rds-instance"
+  identifier        = "${var.project_name}-mysql"
   engine            = "mysql"
   engine_version    = "8.0"
-  instance_class    = "db.t4g.micro"   # low cost option
+  instance_class    = "db.t4g.micro"   # low cost
   allocated_storage = 20
-  storage_type      = "gp2"
+  storage_type      = "gp3"           # better than gp2
 
   db_name  = var.db_name
   username = var.db_user
@@ -25,11 +25,15 @@ resource "aws_db_instance" "mysql" {
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
 
   publicly_accessible = false
-  skip_final_snapshot = true
-  deletion_protection = false
   multi_az            = false
+  deletion_protection = false
+  skip_final_snapshot = true
+
+  backup_retention_period = 1
+  storage_encrypted       = true
+  apply_immediately       = true
 
   tags = {
-    Name = "mysql-rds"
+    Name = "${var.project_name}-mysql"
   }
 }

@@ -11,9 +11,9 @@ resource "aws_db_instance" "mysql" {
   identifier        = "${var.project_name}-mysql"
   engine            = "mysql"
   engine_version    = "8.0"
-  instance_class    = "db.t4g.micro"   # low cost
+  instance_class    = "db.t4g.micro" # low cost
   allocated_storage = 20
-  storage_type      = "gp3"           # better than gp2
+  storage_type      = "gp3" # better than gp2
 
   db_name  = var.db_name
   username = var.db_user

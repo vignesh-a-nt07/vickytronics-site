@@ -64,10 +64,13 @@ services:
     restart: unless-stopped
     command: sh -c "npx prisma migrate deploy && node seed.js && npm run dev"
     healthcheck:
-      test: ["CMD", "sh", "-c", "curl -f http://localhost:3001 || exit 1"]
-      interval: 10s
+      test: ["CMD", "wget", "--spider", "http://localhost:3001/health"]
+      interval: 15s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 40s
+
+
 
   # Frontend (Next.js)
   frontend:

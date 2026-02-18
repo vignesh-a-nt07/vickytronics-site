@@ -3,9 +3,10 @@ kind: Service
 metadata:
   name: {{ include "lms.fullname" . }}-backend
 spec:
-  type: ClusterIP
+  type: {{ .Values.service.type }}
   selector:
     app: backend
   ports:
     - port: {{ .Values.service.backendPort }}
       targetPort: {{ .Values.backend.containerPort }}
+      protocol: TCP

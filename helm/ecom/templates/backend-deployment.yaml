@@ -19,7 +19,7 @@ spec:
 
           command: ["sh", "-c"]
           args:
-            - npx prisma db push && npm start
+            - npm start
 
           ports:
             - containerPort: {{ .Values.backend.containerPort }}

@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "ecommerce.fullname" . }}-migration
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+
+          command: ["sh", "-c"]
+          args:
+            - |
+              echo "Running Prisma migration..."
+              npx prisma migrate deploy &&
+              echo "Running seed script..." &&
+              node seed.js
+
+          envFrom:
+            - secretRef:
+                name: {{ .Values.database.secretName }}

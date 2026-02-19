@@ -1,37 +1,45 @@
-import { PrismaClient } from "@prisma/client"; 
+import { PrismaClient } from "@prisma/client";
 
 const prismaClientSingleton = () => {
-    // Validate that DATABASE_URL is present
-    if (!process.env.DATABASE_URL) {
-        throw new Error('DATABASE_URL environment variable is required');
-    }
+  // Use dummy DB URL during build if DATABASE_URL not present
+  const databaseUrl =
+    process.env.DATABASE_URL ||
+    "mysql://dummy:dummy@localhost:3306/dummy";
 
-    // Parse DATABASE_URL to check SSL configuration
-    const databaseUrl = process.env.DATABASE_URL;
-    const url = new URL(databaseUrl);
-    
-    // Log SSL configuration for debugging
-    if (process.env.NODE_ENV === "development") {
-        console.log(` Database connection: ${url.protocol}//${url.hostname}:${url.port || '3306'}`);
-        console.log(`🔒 SSL Mode: ${url.searchParams.get('sslmode') || 'not specified'}`);
-    }
+  // Only log in development
+  if (process.env.NODE_ENV === "development" && process.env.DATABASE_URL) {
+    const url = new URL(process.env.DATABASE_URL);
+    console.log(
+      ` Database connection: ${url.protocol}//${url.hostname}:${url.port || "3306"}`
+    );
+    console.log(
+      ` SSL Mode: ${url.searchParams.get("sslmode") || "not specified"}`
+    );
+  }
 
-    return new PrismaClient({
-        // Add logging for debugging
-        log: process.env.NODE_ENV === "development" 
-            ? ['query', 'info', 'warn', 'error']
-            : ['error', 'warn'],
-    });
-}
+  return new PrismaClient({
+    datasources: {
+      db: {
+        url: databaseUrl,
+      },
+    },
+    log:
+      process.env.NODE_ENV === "development"
+        ? ["query", "info", "warn", "error"]
+        : ["error", "warn"],
+  });
+};
 
 type PrismaClientSingleton = ReturnType<typeof prismaClientSingleton>;
 
 const globalForPrisma = globalThis as unknown as {
-    prisma: PrismaClientSingleton | undefined;
-}
+  prisma: PrismaClientSingleton | undefined;
+};
 
 const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
 
 export default prisma;
 
-if(process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}

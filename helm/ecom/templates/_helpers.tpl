@@ -1,7 +1,7 @@
-{{- define "lms.name" -}}
-lms
+{{- define "ecommerce.name" -}}
+ecommerce
 {{- end }}
 
-{{- define "lms.fullname" -}}
-lms
+{{- define "ecommerce.fullname" -}}
+ecommerce
 {{- end }}

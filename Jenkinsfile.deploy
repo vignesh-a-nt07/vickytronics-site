@@ -81,7 +81,7 @@ pipeline {
         sh '''
           IMAGE_TAG=$(git rev-parse --short HEAD)
 
-          helm upgrade --install ecommerce ./helm/lms \
+          helm upgrade --install ecommerce ./helm/ecom \
             --namespace ecommerce \
             --create-namespace \
             --set backend.image.tag=$IMAGE_TAG \

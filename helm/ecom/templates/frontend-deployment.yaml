@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "lms.fullname" . }}-frontend
+  name: {{ include "ecommerce.fullname" . }}-frontend
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -20,4 +20,27 @@ spec:
             - containerPort: {{ .Values.frontend.containerPort }}
           env:
             - name: NEXT_PUBLIC_API_BASE_URL
-              value: "http://{{ include "lms.fullname" . }}-backend:{{ .Values.service.backendPort }}"
+              value: "http://{{ include "ecommerce.fullname" . }}-backend:{{ .Values.service.backendPort }}"
+          resources:
+            requests:
+              memory: {{ .Values.frontend.resources.requests.memory }}
+              cpu: {{ .Values.frontend.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.frontend.resources.limits.memory }}
+              cpu: {{ .Values.frontend.resources.limits.cpu }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.frontend.containerPort }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.frontend.containerPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3

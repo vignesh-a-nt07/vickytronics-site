@@ -1,11 +1,9 @@
-import type { AuthOptions } from "next-auth";
-import type { Account, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "@/utils/db";
 import { nanoid } from "nanoid";
 
-export const authOptions: AuthOptions = {
+export const authOptions = {
   providers: [
     CredentialsProvider({
       id: "credentials",
@@ -14,21 +12,28 @@ export const authOptions: AuthOptions = {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
+
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
 
         const user = await prisma.user.findFirst({
           where: { email: credentials.email },
         });
 
-        if (!user || !user.password) return null;
+        if (!user || !user.password) {
+          return null;
+        }
 
         const isPasswordCorrect = await bcrypt.compare(
           credentials.password,
           user.password
         );
 
-        if (!isPasswordCorrect) return null;
+        if (!isPasswordCorrect) {
+          return null;
+        }
 
         return {
           id: user.id,
@@ -72,7 +77,9 @@ export const authOptions: AuthOptions = {
       const tokenAge = now - (token.iat as number);
       const maxAge = 15 * 60;
 
-      if (tokenAge > maxAge) return {};
+      if (tokenAge > maxAge) {
+        return {};
+      }
 
       return token;
     },

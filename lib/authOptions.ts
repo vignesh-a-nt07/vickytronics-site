@@ -1,10 +1,10 @@
-import type { NextAuthOptions } from "next-auth";
+import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "@/utils/db";
 import { nanoid } from "nanoid";
 
-export const authOptions: NextAuthOptions = {
+export const authOptions = {
   providers: [
     CredentialsProvider({
       id: "credentials",
@@ -45,61 +45,69 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
 
-  callbacks: {
-    async signIn({ user, account }) {
-      if (account?.provider === "credentials") return true;
+callbacks: {
+  async signIn(params: any) {
+    const { user, account } = params;
 
-      const existingUser = await prisma.user.findFirst({
-        where: { email: user.email! },
+    if (account?.provider === "credentials") return true;
+
+    const existingUser = await prisma.user.findFirst({
+      where: { email: user.email! },
+    });
+
+    if (!existingUser) {
+      await prisma.user.create({
+        data: {
+          id: nanoid(),
+          email: user.email!,
+          role: "user",
+          password: null,
+        },
       });
+    }
 
-      if (!existingUser) {
-        await prisma.user.create({
-          data: {
-            id: nanoid(),
-            email: user.email!,
-            role: "user",
-            password: null,
-          },
-        });
-      }
-
-      return true;
-    },
-
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = (user as any).role;
-        token.id = user.id;
-        token.iat = Math.floor(Date.now() / 1000);
-      }
-
-      const now = Math.floor(Date.now() / 1000);
-      const tokenAge = now - (token.iat as number);
-      const maxAge = 15 * 60;
-
-      if (tokenAge > maxAge) {
-        return {};
-      }
-
-      return token;
-    },
-
-    async session({ session, token }) {
-      if (token && session.user) {
-        (session.user as any).role = token.role as string;
-        (session.user as any).id = token.id as string;
-      }
-      return session;
-    },
+    return true;
   },
+
+  async jwt(params: any) {
+    const { token, user } = params;
+
+    if (user) {
+      token.role = user.role;
+      token.id = user.id;
+      token.iat = Math.floor(Date.now() / 1000);
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const tokenAge = now - (token.iat as number);
+    const maxAge = 15 * 60;
+
+    if (tokenAge > maxAge) {
+      return {};
+    }
+
+    return token;
+  },
+
+  async session(params: any) {
+    const { session, token } = params;
+
+    if (token && session.user) {
+      session.user.role = token.role;
+      session.user.id = token.id;
+    }
+
+    return session;
+  },
+},
+
 
   pages: {
     signIn: "/login",
     error: "/login",
   },
 
- session: {
+  session: {
     strategy: "jwt" as const,
     maxAge: 15 * 60,
     updateAge: 5 * 60,

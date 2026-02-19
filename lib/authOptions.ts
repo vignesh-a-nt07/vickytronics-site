@@ -1,11 +1,11 @@
-import { NextAuthOptions } from "next-auth";
-import { Account, User as AuthUser } from "next-auth";
+import type { AuthOptions } from "next-auth";
+import type { Account, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "@/utils/db";
 import { nanoid } from "nanoid";
 
-export const authOptions: NextAuthOptions = {
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       id: "credentials",
@@ -14,16 +14,18 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials: any) {
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) return null;
+
         const user = await prisma.user.findFirst({
           where: { email: credentials.email },
         });
 
-        if (!user) return null;
+        if (!user || !user.password) return null;
 
         const isPasswordCorrect = await bcrypt.compare(
           credentials.password,
-          user.password!
+          user.password
         );
 
         if (!isPasswordCorrect) return null;
@@ -36,6 +38,7 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
+
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "credentials") return true;
@@ -57,9 +60,10 @@ export const authOptions: NextAuthOptions = {
 
       return true;
     },
+
     async jwt({ token, user }) {
       if (user) {
-        token.role = user.role;
+        token.role = (user as any).role;
         token.id = user.id;
         token.iat = Math.floor(Date.now() / 1000);
       }
@@ -72,26 +76,31 @@ export const authOptions: NextAuthOptions = {
 
       return token;
     },
+
     async session({ session, token }) {
-      if (token) {
-        session.user.role = token.role as string;
-        session.user.id = token.id as string;
+      if (token && session.user) {
+        (session.user as any).role = token.role as string;
+        (session.user as any).id = token.id as string;
       }
       return session;
     },
   },
+
   pages: {
     signIn: "/login",
     error: "/login",
   },
+
   session: {
     strategy: "jwt",
     maxAge: 15 * 60,
     updateAge: 5 * 60,
   },
+
   jwt: {
     maxAge: 15 * 60,
   },
+
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
 };

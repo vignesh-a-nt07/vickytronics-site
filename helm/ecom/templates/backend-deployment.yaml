@@ -16,11 +16,18 @@ spec:
         - name: backend
           image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
           imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+
+          command: ["sh", "-c"]
+          args:
+            - npx prisma db push && npm start
+
           ports:
             - containerPort: {{ .Values.backend.containerPort }}
+
           envFrom:
             - secretRef:
                 name: {{ .Values.database.secretName }}
+
           resources:
             requests:
               memory: {{ .Values.backend.resources.requests.memory }}
@@ -28,6 +35,7 @@ spec:
             limits:
               memory: {{ .Values.backend.resources.limits.memory }}
               cpu: {{ .Values.backend.resources.limits.cpu }}
+
           livenessProbe:
             httpGet:
               path: /health
@@ -36,6 +44,7 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
+
           readinessProbe:
             httpGet:
               path: /health

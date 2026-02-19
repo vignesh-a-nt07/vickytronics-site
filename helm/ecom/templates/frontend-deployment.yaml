@@ -18,9 +18,17 @@ spec:
           imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.frontend.containerPort }}
+
+          # 👇 Keep your existing env
           env:
             - name: NEXT_PUBLIC_API_BASE_URL
               value: "http://{{ include "ecommerce.fullname" . }}-backend:{{ .Values.service.backendPort }}"
+
+          # 👇 ADD THIS BLOCK
+          envFrom:
+            - secretRef:
+                name: db-secret
+
           resources:
             requests:
               memory: {{ .Values.frontend.resources.requests.memory }}
@@ -28,6 +36,7 @@ spec:
             limits:
               memory: {{ .Values.frontend.resources.limits.memory }}
               cpu: {{ .Values.frontend.resources.limits.cpu }}
+
           livenessProbe:
             httpGet:
               path: /
@@ -36,6 +45,7 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
+
           readinessProbe:
             httpGet:
               path: /

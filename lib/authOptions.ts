@@ -1,9 +1,10 @@
+import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "@/utils/db";
 import { nanoid } from "nanoid";
 
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       id: "credentials",
@@ -98,8 +99,8 @@ export const authOptions = {
     error: "/login",
   },
 
-  session: {
-    strategy: "jwt",
+ session: {
+    strategy: "jwt" as const,
     maxAge: 15 * 60,
     updateAge: 5 * 60,
   },

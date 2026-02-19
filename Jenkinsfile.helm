@@ -7,7 +7,7 @@ pipeline {
 
     AWS_REGION     = 'us-east-1'
     AWS_ACCOUNT_ID = '393078901209'
-    EKS_CLUSTER   = 'vickytronic-site-eks'
+    EKS_CLUSTER    = 'vickytronic-site-eks'
   }
 
   options {
@@ -36,14 +36,13 @@ pipeline {
     stage('Deploy with Helm') {
       steps {
         sh '''
-          IMAGE_TAG=$(git rev-parse --short HEAD)
-
           helm upgrade --install ecommerce ./helm/ecom \
             --namespace ecommerce \
             --create-namespace \
-            --set backend.image.tag=$IMAGE_TAG \
-            --set frontend.image.tag=$IMAGE_TAG
+            --set backend.image.tag=latest \
+            --set frontend.image.tag=latest
         '''
+        sh 'kubectl rollout restart deployment -n ecommerce'
       }
     }
   }
